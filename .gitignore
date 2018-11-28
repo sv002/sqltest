@@ -1,5 +1,6 @@
 .DS_Store
 *.pyc
-/.idea
+*.idea
 /test.db
 /dbs/features.json
+*.swp
