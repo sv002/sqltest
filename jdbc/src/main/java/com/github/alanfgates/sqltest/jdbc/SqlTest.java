@@ -10,7 +10,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -179,12 +178,13 @@ public class SqlTest {
     try (DockerHelper docker = new DockerHelper(log)) {
       String dockerFileDir = testHome + File.separator + "dbs" + File.separator + systemUnderTest +
           File.separator + "v" + systemVersion.replace('.', '_');
-      docker.buildImage(dockerFileDir, systemUnderTest, waitForImage);
+      docker.buildImage(dockerFileDir, systemUnderTest, systemVersion, waitForImage);
       docker.runImage(port, 30);
 
       log.log("Waiting for server to start...");
       Thread.sleep(waitForServer * 1000);
 
+      // Beginning our attack run
       // Get a JDBC connection
       JdbcHelper jdbc = new JdbcHelper(log);
       try (Connection conn = jdbc.connect(jdbcDriverClass, jdbcUrl, jdbcUser, jdbcPassword)) {

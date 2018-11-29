@@ -40,8 +40,9 @@ class DockerHelper implements Closeable {
   }
 
 
-  void buildImage(String dockerFileDir, String systemUnderTest, long secondsToWait) throws IOException, InterruptedException {
-    buildImageName(systemUnderTest);
+  void buildImage(String dockerFileDir, String systemUnderTest, String systemVersion, long secondsToWait)
+      throws IOException, InterruptedException {
+    buildImageName(systemUnderTest, systemVersion);
     if (runCmdAndPrintStreams(new String[] {"docker", "build", "--tag", imageName, dockerFileDir}, secondsToWait) != 0) {
       throw new IOException("Failed to build docker image");
     }
@@ -66,9 +67,9 @@ class DockerHelper implements Closeable {
       throw new IOException(e);
     }
   }
-  private void buildImageName(String systemUnderTest) {
+  private void buildImageName(String systemUnderTest, String systemVersion) {
     if (imageName == null) {
-      imageName = "sqltest-" + systemUnderTest + "-" + System.getProperty("user.name");
+      imageName = "sqltest-" + systemUnderTest + "-" + systemVersion + "-" + System.getProperty("user.name");
     }
   }
 

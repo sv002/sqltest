@@ -40,4 +40,4 @@ ENV JAVA_HOME /usr
 EXPOSE 10000
 WORKDIR /home/hive
 
-CMD ["hive", "--service", "hiveserver2", "--hiveconf", "datanucleus.schema.autoCreateAll=true", "--hiveconf", "hive.metastore.schema.verification=false"]
+CMD ["hive", "--service", "hiveserver2", "--hiveconf", "datanucleus.schema.autoCreateAll=true", "--hiveconf", "hive.metastore.schema.verification=false", "--hiveconf", "hive.users.in.admin.role=hive"]
