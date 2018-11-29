@@ -8,6 +8,7 @@ class TestInfo {
   public String id;
   public Object sql;
   Boolean passed;
+  Exception exception;
 
   List<String> getSql() {
     if (sql instanceof String) return Collections.singletonList(sql.toString());
@@ -19,12 +20,11 @@ class TestInfo {
   public String toString() {
     StringBuilder buf = new StringBuilder("feature: ");
     buf.append(feature)
-        .append("\n")
-        .append("id: ")
+        .append("\nid: ")
         .append(id)
-        .append("\n")
-        .append("sql: ");
+        .append("\nsql: ");
     for (String s : getSql()) buf.append(s).append("; ");
+    if (exception != null) buf.append("\nexception: ").append(exception).append("\n");
     return buf.toString();
   }
 }

@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Need to look through the arguments to find the home directory so we know where to look for our jars and the
+# jars argument so we know where to find extra jars to add to the classpath.
+
+next=""
+home=""
+jars=""
+for arg in $@
+do
+  if [[ $next == "jars" ]]
+  then
+    jars=$arg
+    next=""
+  elif [[ $next == "home" ]]
+  then
+    home=$arg
+    next=""
+  elif [[ $arg == "-j" || $arg == "-jars" ]]
+  then
+    next="jars"
+  elif [ $arg == "-h" ] || [ $arg == "-sqltest-home" ]
+  then
+    next="home"
+  fi
+done
+
+homeWasUnset=""
+if [[ -z $home ]]
+then
+  echo "You didn't indicate a home directory, assuming CWD, don't blame me if this goes poorly."
+  home=$PWD
+  homeWasUnset="true"
+fi
+
+classpath=""
+for jar in ${home}/jdbc/target/sqltest-jdbc-0.1-bin/lib/*.jar
+do
+  classpath=$classpath:$jar
+done
+
+# Add in the user added jars
+if [[ -n $jars ]]
+then
+    classpath=$classpath:$jars
+fi
+
+if [[ $homeWasUnset == "true" ]]
+then
+    java -cp $classpath com.github.alanfgates.sqltest.jdbc.SqlTest -h $home $@
+else
+    java -cp $classpath com.github.alanfgates.sqltest.jdbc.SqlTest $@
+fi
+
+

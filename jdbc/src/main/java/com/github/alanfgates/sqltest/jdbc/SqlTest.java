@@ -4,6 +4,7 @@ import org.apache.commons.cli.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,93 +24,110 @@ public class SqlTest {
   private String jdbcDriverClass;
   private String jdbcUser;
   private String jdbcPassword;
+  private String reportFile;
   private int waitForServer = 5;
   private int waitForImage = 600;
   private Logger log;
 
-  @SuppressWarnings("static-access")
   private int parseArgs(String[] args) {
     CommandLineParser parser = new GnuParser();
 
     Options opts = new Options();
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("wait-for-image")
-        .withDescription("Time to wait in seconds for the docker image to build.  Default is 600 sec.")
+    opts.addOption(Option.builder()
+        .longOpt("wait-for-image")
+        .desc("Time to wait in seconds for the docker image to build.  Default is 600 sec.")
         .hasArg()
-        .create());
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("jdbc-driver-class")
-        .withDescription("Class of the JDBC driver")
+    opts.addOption(Option.builder("c")
+        .longOpt("jdbc-driver-class")
+        .desc("Class of the JDBC driver")
         .hasArg()
-        .isRequired()
-        .create('c'));
+        .required()
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("sqltest-home")
-        .withDescription("Directory where the sqltest source is.  Defaults to .")
+    opts.addOption(Option.builder("h")
+        .longOpt("sqltest-home")
+        .desc("Directory where the sqltest source is.  Defaults to .")
         .hasArg()
-        .create('h'));
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("jdbc-url")
-        .withDescription("URL to access the JDBC end point")
+    opts.addOption(Option.builder("j")
+        .longOpt("jdbc-url")
+        .desc("URL to access the JDBC end point")
         .hasArg()
-        .isRequired()
-        .create('j'));
+        .required()
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("jdbc-password")
-        .withDescription("Password to login to the database with, can be included in the URL instead." +
+    // This is actually ignored, just put here so that it shows up in the usage statement.  The value will be used by
+    // start script to add these jars to our classpath
+    opts.addOption(Option.builder("J")
+        .longOpt("jars")
+        .desc("Jars to include in class path for JDBC driver.  Multiple can be included, should be separatored using "
+            + File.pathSeparator)
+        .hasArgs()
+        .valueSeparator(File.pathSeparatorChar)
+        .required()
+        .build());
+
+    opts.addOption(Option.builder("P")
+        .longOpt("jdbc-password")
+        .desc("Password to login to the database with, can be included in the URL instead." +
             " If passed here jdbc-user|u must be provided as well")
         .hasArg()
-        .create('P'));
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("port")
-        .withDescription("Port to map. Can give docker mapping (x:y) or single value which will be mapped into docker as x:x")
+    opts.addOption(Option.builder("p")
+        .longOpt("port")
+        .desc("Port to map. Can give docker mapping (x:y) or single value which will be mapped into docker as x:x")
         .hasArg()
-        .isRequired()
-        .create('p'));
+        .required()
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("spec-version")
-        .withDescription("Spec version to test, defaults to 2016 (also only supported option atm)")
+    opts.addOption(Option.builder("r")
+        .longOpt("report-file")
+        .desc("File to write report into, defaults to sqltest-<system-under-test>-<system-version>-report")
         .hasArg()
-        .create('s'));
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("system-under-test")
-        .withDescription("Name of the system we are testing")
+    opts.addOption(Option.builder("s")
+        .longOpt("spec-version")
+        .desc("Spec version to test, defaults to 2016 (also only supported option atm)")
         .hasArg()
-        .isRequired()
-        .create('t'));
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("jdbc-user")
-        .withDescription("User to login to the database with, can be included in the URL instead." +
+    opts.addOption(Option.builder("t")
+        .longOpt("system-under-test")
+        .desc("Name of the system we are testing")
+        .hasArg()
+        .required()
+        .build());
+
+    opts.addOption(Option.builder("u")
+        .longOpt("jdbc-user")
+        .desc("User to login to the database with, can be included in the URL instead." +
             " If passed here jdbc-password|P must be provided as well")
         .hasArg()
-        .create('u'));
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("wait-for-server")
-        .withDescription("Time to wait in seconds after starting the docker container before beginning the test.  Default is 5 sec.")
+    opts.addOption(Option.builder("w")
+        .longOpt("wait-for-server")
+        .desc("Time to wait in seconds after starting the docker container before beginning the test.  Default is 5 sec.")
         .hasArg()
-        .create('w'));
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("system-version")
-        .withDescription("Version of the system we are testing, must match version number in source code")
+    opts.addOption(Option.builder("v")
+        .longOpt("system-version")
+        .desc("Version of the system we are testing, must match version number in source code")
         .hasArg()
-        .isRequired()
-        .create('v'));
+        .required()
+        .build());
 
-    opts.addOption(OptionBuilder
-        .withLongOpt("verbose")
-        .withDescription("Turn on lots of debug messaging")
-        .create('V'));
+    opts.addOption(Option.builder("V")
+        .longOpt("verbose")
+        .desc("Turn on lots of debug messaging")
+        .build());
 
     CommandLine cmd;
     try {
@@ -120,6 +138,15 @@ public class SqlTest {
       return -1;
     }
 
+    // Required args
+    port = cmd.getOptionValue('p');
+    if (!port.contains(":")) port = port + ":" + port;
+    jdbcUrl = cmd.getOptionValue('j');
+    jdbcDriverClass = cmd.getOptionValue('c');
+    systemUnderTest = cmd.getOptionValue('t');
+    systemVersion = cmd.getOptionValue('v');
+
+    // Optional args
     testHome = ".";
     if (cmd.hasOption('h')) testHome = cmd.getOptionValue('h');
     specVersion = "2016";
@@ -129,13 +156,9 @@ public class SqlTest {
     if (cmd.hasOption('u')) jdbcUser = cmd.getOptionValue('u');
     if (cmd.hasOption('P')) jdbcPassword = cmd.getOptionValue('P');
     log = new Logger(cmd.hasOption('V'));
+    if (cmd.hasOption('r')) reportFile = cmd.getOptionValue('r');
+    else reportFile = "sqltest-" + systemUnderTest + "-" + systemVersion + "-report";
 
-    port = cmd.getOptionValue('p');
-    if (!port.contains(":")) port = port + ":" + port;
-    jdbcUrl = cmd.getOptionValue('j');
-    jdbcDriverClass = cmd.getOptionValue('c');
-    systemUnderTest = cmd.getOptionValue('t');
-    systemVersion = cmd.getOptionValue('v');
     return 0;
   }
 
@@ -185,6 +208,7 @@ public class SqlTest {
             test.passed = true;
             log.log("Test " + test.id + " passed");
           } catch (SQLException e) {
+            test.exception = e;
             log.log("While running " + running + " caught SQLException state: " + e.getSQLState() + " error code: "
                 + e.getErrorCode(), e);
             test.passed = false;
@@ -197,9 +221,24 @@ public class SqlTest {
     }
 
     // Report
-    for (Map.Entry<String, FeatureInfo> e : features.entrySet()) {
-      System.out.println("Feature id: " + e.getKey() + " Status: " + e.getValue().getStatus().toString());
+    PrintWriter reportWriter = new PrintWriter(reportFile);
+    int yes = 0, partial = 0, no = 0;
+    for (FeatureInfo feature : features.values()) {
+      reportWriter.println(feature.toString());
+      reportWriter.println("--------------------------------");
+      FeatureInfo.SupportedStatus status = feature.getStatus();
+      if (status == FeatureInfo.SupportedStatus.YES) yes++;
+      else if (status == FeatureInfo.SupportedStatus.NO) no++;
+      else if (status == FeatureInfo.SupportedStatus.PARTIAL) partial++;
+      else throw new RuntimeException("huh?");
     }
+    reportWriter.println();
+    reportWriter.println("--------------------------------");
+    reportWriter.println("Summary:");
+    reportWriter.println("Yes: " + yes);
+    reportWriter.println("Partial: " + partial);
+    reportWriter.println("No: " + no);
+    reportWriter.close();
   }
 
   public static void main(String[] args) {
