@@ -34,10 +34,19 @@ USER hive
 ENV HIVE_HOME /grid/apache-hive-3.1.1-bin
 ENV HADOOP_HOME /grid/hadoop-3.1.1
 ENV PATH $PATH:$HADOOP_HOME/bin:$HIVE_HOME/bin
+ENV HADOOP_OPTS=-Xmx3072m
 ENV JAVA_HOME /usr
 
 
 EXPOSE 10000
 WORKDIR /home/hive
 
-CMD ["hive", "--service", "hiveserver2", "--hiveconf", "datanucleus.schema.autoCreateAll=true", "--hiveconf", "hive.metastore.schema.verification=false", "--hiveconf", "hive.users.in.admin.role=hive"]
+RUN $HIVE_HOME/bin/schematool -dbType derby -initSchema
+
+CMD ["hive", "--service", "hiveserver2", \
+      "--hiveconf", "hive.users.in.admin.role=hive", \
+      "--hiveconf", "hive.mapred.mode=nonstrict", \
+      "--hiveconf", "hive.support.concurrency=true", \
+      "--hiveconf", "hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DbTxnManager", \
+      "--hiveconf", "hive.default.fileformat=ORC" \
+    ]

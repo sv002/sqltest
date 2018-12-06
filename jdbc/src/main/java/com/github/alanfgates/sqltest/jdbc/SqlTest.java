@@ -24,6 +24,7 @@ public class SqlTest {
   private String jdbcUser;
   private String jdbcPassword;
   private String reportFile;
+  private String testFilter = null;
   private int waitForServer = 5;
   private int waitForImage = 600;
   private Logger log;
@@ -44,6 +45,12 @@ public class SqlTest {
         .desc("Class of the JDBC driver")
         .hasArg()
         .required()
+        .build());
+
+    opts.addOption(Option.builder("f")
+        .longOpt("test-filter")
+        .desc("Filter to apply to tests.  Must be  prefix (e.g. E or E021)")
+        .hasArg()
         .build());
 
     opts.addOption(Option.builder("h")
@@ -157,6 +164,7 @@ public class SqlTest {
     log = new Logger(cmd.hasOption('V'));
     if (cmd.hasOption('r')) reportFile = cmd.getOptionValue('r');
     else reportFile = "sqltest-" + systemUnderTest + "-" + systemVersion + "-report";
+    if (cmd.hasOption('f')) testFilter = cmd.getOptionValue('f').toLowerCase();
 
     return 0;
   }
@@ -172,7 +180,7 @@ public class SqlTest {
     // Read the tests
     String testDir = testHome + File.separator + "standards" + File.separator + specVersion;
     TestReader testReader = new TestReader(log, testDir);
-    List<TestInfo> tests = testReader.readTests();
+    List<TestInfo> tests = testReader.readTests(testFilter);
 
     // Set up docker
     try (DockerHelper docker = new DockerHelper(log)) {

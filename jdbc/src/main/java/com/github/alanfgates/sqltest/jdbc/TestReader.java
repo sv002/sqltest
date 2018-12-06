@@ -20,7 +20,7 @@ class TestReader {
     this.basedir = new File(basedirName);
   }
 
-  List<TestInfo> readTests() throws IOException {
+  List<TestInfo> readTests(final String filter) throws IOException {
     List<File> testFiles = findTestFiles();
     List<TestInfo> tests = new ArrayList<>();
 
@@ -29,7 +29,13 @@ class TestReader {
       ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
       ObjectReader reader = mapper.readerFor(TestInfo.class);
       MappingIterator<TestInfo> iter = reader.readValues(testFile);
-      tests.addAll(iter.readAll());
+      if (filter != null) {
+        iter.readAll().forEach(testInfo -> {
+          if (testInfo.id.toLowerCase().startsWith(filter)) tests.add(testInfo);
+        });
+      } else {
+        tests.addAll(iter.readAll());
+      }
     }
     return tests;
   }

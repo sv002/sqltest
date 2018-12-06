@@ -24,7 +24,8 @@ class TestInfo {
         .append(id)
         .append("\nsql: ");
     for (String s : getSql()) buf.append(s).append("; ");
-    if (exception != null) buf.append("\nexception: ").append(exception).append("\n");
+    if (exception != null) buf.append("\nexception: ").append(exception);
+    buf.append("\n");
     return buf.toString();
   }
 }

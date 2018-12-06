@@ -2,6 +2,7 @@ feature: E153
 id: e153_01_01
 sql:
 - CREATE TABLE TABLE_E153_01_01 ( A INT, B INT )
+- alter table TABLE_E153_01_01 set TBLPROPERTIES ('transactional'='true')
 - INSERT INTO TABLE_E153_01_01 VALUES ( 1, 2 )
 - UPDATE TABLE_E153_01_01 SET A = 3, B = 4 WHERE A = ( SELECT 1 )
 ---
@@ -9,5 +10,6 @@ feature: E153
 id: e153_02_01
 sql:
 - CREATE TABLE TABLE_E153_02_01 ( A INT, B INT )
+- alter table TABLE_E153_02_01 set TBLPROPERTIES ('transactional'='true')
 - INSERT INTO TABLE_E153_02_01 VALUES ( 1, 2 )
 - DELETE FROM TABLE_E153_02_01 WHERE A = ( SELECT 1 )

@@ -43,6 +43,7 @@ class DockerHelper implements Closeable {
   void buildImage(String dockerFileDir, String systemUnderTest, String systemVersion, long secondsToWait)
       throws IOException, InterruptedException {
     buildImageName(systemUnderTest, systemVersion);
+    log.log("Building image " + imageName);
     if (runCmdAndPrintStreams(new String[] {"docker", "build", "--tag", imageName, dockerFileDir}, secondsToWait) != 0) {
       throw new IOException("Failed to build docker image");
     }
@@ -51,6 +52,7 @@ class DockerHelper implements Closeable {
   void runImage(String portMapping, long secondsToWait)
       throws IOException, InterruptedException {
     buildContainerName();
+    log.log("Running container " + containerName);
     if (runCmdAndPrintStreams(new String[] {"docker", "run", "--name", containerName, "-p", portMapping, "-d",
         imageName}, secondsToWait) != 0) {
       throw new IOException("Failed to run docker image");

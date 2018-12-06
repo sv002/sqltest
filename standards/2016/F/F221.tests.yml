@@ -8,4 +8,5 @@ feature: F221
 id: f221_02_01
 sql:
 - CREATE TABLE TABLE_F221_02_011 ( A INTEGER DEFAULT 123 )
+- alter table TABLE_F221_02_011 set TBLPROPERTIES ('transactional'='true')
 - UPDATE TABLE_F221_02_011 SET A = DEFAULT
