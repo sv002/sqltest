@@ -17,7 +17,7 @@ fi
 docker run -d --name $1 -v "`pwd`:/tmp/sql" $DOCKER_TAG
 
 # We have to give the container a bit of time to start up. There should be a
-# better solution here.
+# better solution here.###
 sleep 3
 
 # Execute the tests
